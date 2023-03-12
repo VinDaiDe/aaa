@@ -1,0 +1,43 @@
+name: Create Windows VM and setup ngrok
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  AZURE_SUBSCRIPTION: <your subscription id>
+  AZURE_CLIENT_ID: <your client id>
+  AZURE_CLIENT_SECRET: <your client secret>
+  AZURE_TENANT_ID: <your tenant id>
+  RDP_USERNAME: vindaide
+  RDP_PASSWORD: 12344321
+  NGROK_AUTH_TOKEN: 2MttYzoxItFks9FWfM18LUQb8Jq_6x4mRcZRNB28qHNNtR5bd
+
+jobs:
+  create-vm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: '${{ secrets.AZURE_CREDENTIALS }}'
+
+      - name: Create Windows 10 VM
+        uses: azure/cli@v1.0.0
+        with:
+          inlineScript: |
+            az vm create --name windows-vm --resource-group my-resource-group --image MicrosoftWindowsDesktop:Windows-10:20h2-pro:19042.630.20201110 --size Standard_D2s_v3 --admin-username vindaide --admin-password 12344321 --authentication-type password --public-ip-address-allocation dynamic --nsg-rule rdp-rule --output json
+          
+      - name: Setup RDP
+        uses: azure/setup-rdp@v1
+        with:
+          password: ${{ env.RDP_PASSWORD }}
+
+      - name: Install ngrok and setup tunnel
+        uses: kroniak/rdp-ngrok@master
+        with:
+          ngrok_auth_token: ${{ env.NGROK_AUTH_TOKEN }}
